@@ -1,0 +1,80 @@
+package main
+
+import (
+	"context"
+	"net/http"
+	"time"
+	
+	"github.com/doors-dev/doors"
+	"github.com/doors-dev/gox"
+	"github.com/doors-dev/tutorial/driver"
+)
+
+const userLogin = "admin"
+const userPassword = "password123"
+const sessionDuration = time.Hour * 24
+
+func Login(session doors.Source[driver.Session]) gox.Comp {
+	return login{
+		session: session,
+		message: new(doors.Door),
+	}
+}
+
+type login struct {
+	session doors.Source[driver.Session]
+	message *doors.Door
+}
+
+type loginData struct {
+	Login string `form:"login"`
+	Password string `form:"password"`
+}
+
+func (l login) submit(ctx context.Context, r doors.RequestForm[loginData]) bool {
+	if r.Data().Login != userLogin || r.Data().Password != userPassword {
+		l.message.Inner(ctx, <p><mark>wrong password or login</mark></p>)
+		return false
+	}
+	l.message.Inner(ctx, nil)
+	session := driver.Sessions.Add(r.Data().Login, sessionDuration)
+	r.SetCookie(&http.Cookie{
+		Name: "session",
+		Value: session.Token,
+		Expires: time.Now().Add(sessionDuration),
+		Path: "/",
+		HttpOnly: true,
+	})
+	doors.SessionExpire(ctx, sessionDuration)
+	l.session.Update(ctx, session)
+	return true
+}
+
+elem (l login) Main() {
+	<title>Log In</title>
+	<h1>Log In</h1>
+	<form
+		(doors.ASubmit[loginData]{
+			Scope: new(doors.ScopeBlocking),
+			Indicator: doors.IndicateAttrQuery("#login-submit", "aria-busy", "true"),
+			On: l.submit,
+		})>
+		<fieldset>
+			<label>
+				Login
+				<input
+					name="login"
+					required="true"/>
+			</label>
+			<label>
+				Password
+				<input
+					type="password"
+					name="password"
+					required="true"/>
+			</label>
+			~(l.message)
+		</fieldset>
+		<button id="login-submit" type="submit">Log In</button>
+	</form>
+}

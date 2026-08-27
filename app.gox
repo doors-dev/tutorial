@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"net/http"
 	
 	"github.com/doors-dev/doors"
 	"github.com/doors-dev/gox"
@@ -54,7 +55,9 @@ const (
 	Dashboard
 )
 
-type App struct{}
+type App struct {
+	session doors.Source[driver.Session]
+}
 
 elem (a App) Main() {
 	<!doctype html>
@@ -69,14 +72,26 @@ elem (a App) Main() {
 		</head>
 		<body>
 			<main class="container">
-				~(doors.Route(
-					doors.RouteModel(a.content),
-					doors.RouteDefaultComp[doors.Location](<>
-						<title>Not Found</title>
-						~(doors.Status(404))
-						<h1>Location Not Found</h1>
-					</>),
-				))
+				~(a.session.Bind(elem(s driver.Session) {
+					~(if s.IsValid() {
+						<section>
+							~(doors.Route(
+								doors.RouteModel(a.content),
+								doors.RouteDefaultComp[doors.Location](<>
+									<title>Not Found</title>
+									~(doors.Status(404))
+									<h1>Location Not Found</h1>
+								</>),
+							))
+						</section>
+						<hr>
+						<section>
+							~(a.logout(s))
+						</section>
+					} else {
+						~(Login(a.session))
+					})
+				}))
 			</main>
 		</body>
 	</html>
@@ -98,4 +113,23 @@ elem (a App) content(path doors.Source[Path]) {
 		</>),
 		doors.RouteDefault(WeatherDashboard),
 	))
+}
+
+elem (a App) logout(s driver.Session) {
+	~>doors.AClick{
+		Scope: new(doors.ScopeBlocking),
+		Indicator: doors.IndicateAttr("aria-busy", "true"),
+		PreventDefault: true,
+		On: func(ctx context.Context, r doors.RequestPointer) bool {
+			r.SetCookie(&http.Cookie{
+				Name: "session",
+				Path: "/",
+				MaxAge: -1,
+			})
+			driver.Sessions.Remove(s.Token)
+			doors.SessionExpire(ctx, 0)
+			a.session.Update(ctx, driver.Session{})
+			return true
+		},
+	} <a class="contrast" href="#">Log Out</a>
 }
