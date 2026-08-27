@@ -1,0 +1,5 @@
+.DS_Store
+.gocache/
+lessons/
+sqlite/sessions.sqlite3
+sqlite/.DS_Store
