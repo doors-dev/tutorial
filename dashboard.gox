@@ -118,6 +118,7 @@ elem (d dashboard) unitNav(days int) {
 					days: days,
 					units: units,
 					text: units,
+					unitsLoader: true,
 				}
 			</li>
 		})
@@ -129,12 +130,20 @@ type navLink struct {
 	days int
 	units driver.Units
 	text any
+	unitsLoader bool
 }
 
 elem (l navLink) Main() {
+	~~
+	target := ".chart-loader"
+	if l.unitsLoader {
+		target = ".chart-loader-units"
+	}
+	~~
 	<a
 		class="secondary"
 		(doors.ALink{
+			Indicator: doors.IndicateAttrQueryAll(target, "aria-busy", "true"),
 			Active: doors.Active{
 				Indicator: doors.IndicateAttr("aria-current", "true"),
 			},
@@ -165,6 +174,7 @@ elem (d dashboard) charts(city driver.City) {
 						svg, _ := driver.ChartLine(values.Values, values.Labels, units.Temperature())
 						return svg
 					},
+					unitsLoader: true,
 				}
 			})
 			~>(new(doors.Door)) ~({
@@ -210,6 +220,7 @@ elem (d dashboard) charts(city driver.City) {
 						svg, _ := driver.ChartLine(values.Values, values.Labels, units.WindSpeed())
 						return svg
 					},
+					unitsLoader: true,
 				}
 			})
 		</div>
@@ -219,13 +230,29 @@ elem (d dashboard) charts(city driver.City) {
 type chart struct {
 	title string
 	svg func() []byte
+	unitsLoader bool
 }
 
 elem (c chart) Main() {
+	~~
+	door := new(doors.Door)
+	defer door.Static(ctx, <img height="auto" width="100%" src=(c.svg()) type="image/svg+xml"/>)
+	~~
 	<article>
 		<header>
-			~(c.title)
+			~(c.title, " ")
+			<span
+				class=({
+					if c.unitsLoader {
+						return "chart-loader chart-loader-units"
+					}
+					return "chart-loader"
+				})>
+			</span>
 		</header>
-		<img height="auto" width="100%" src=(c.svg()) type="image/svg+xml"/>
+		<div class="img-wrapper">
+			~(door)
+			<div class="img-loader" aria-busy="true"></div>
+		</div>
 	</article>
 }

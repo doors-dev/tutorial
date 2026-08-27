@@ -225,6 +225,7 @@ func (d dashboard) unitNav(days int) gox.Elem {
 					days: days,
 					units: units,
 					text: units,
+					unitsLoader: true,
 				}); if __e != nil { return }
 				}
 				__e = __c.Close(); if __e != nil { return }
@@ -232,7 +233,7 @@ func (d dashboard) unitNav(days int) gox.Elem {
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:125
+//line dashboard.gox:126
 }
 
 type navLink struct {
@@ -240,18 +241,26 @@ type navLink struct {
 	days int
 	units driver.Units
 	text any
+	unitsLoader bool
 }
 
-//line dashboard.gox:134
+//line dashboard.gox:136
 func (l navLink) Main() gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
+//line dashboard.gox:138
+		target := ".chart-loader"
+	if l.unitsLoader {
+		target = ".chart-loader-units"
+	}
+
 		__e = __c.Init("a"); if __e != nil { return }
 		{
-//line dashboard.gox:136
+//line dashboard.gox:144
 			__e = __c.Set("class", "secondary"); if __e != nil { return }
-//line dashboard.gox:137
+//line dashboard.gox:145
 			__e = __c.Modify(doors.ALink{
+			Indicator: doors.IndicateAttrQueryAll(target, "aria-busy", "true"),
 			Active: doors.Active{
 				Indicator: doors.IndicateAttr("aria-current", "true"),
 			},
@@ -263,30 +272,30 @@ func (l navLink) Main() gox.Elem {
 			},
 		}); if __e != nil { return }
 			__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:148
+//line dashboard.gox:157
 			__e = __c.Any(l.text); if __e != nil { return }
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:150
+//line dashboard.gox:159
 }
 
-//line dashboard.gox:152
+//line dashboard.gox:161
 func (d dashboard) charts(city driver.City) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
 		__e = __c.Init("div"); if __e != nil { return }
 		{
-//line dashboard.gox:153
+//line dashboard.gox:162
 			__e = __c.Set("class", "grid"); if __e != nil { return }
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Init("div"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:155
+//line dashboard.gox:164
 				__e = (new(doors.Door)).Proxy(__c, gox.Elem(func(__c gox.Cursor) (__e error) {
 					ctx := __c.Context(); _ = ctx
-//line dashboard.gox:155
+//line dashboard.gox:164
 					__e = __c.Any(func() any {
 				days, _ := d.days.Effect(ctx)
 				units, ok := d.units.Effect(ctx)
@@ -300,13 +309,14 @@ func (d dashboard) charts(city driver.City) gox.Elem {
 						svg, _ := driver.ChartLine(values.Values, values.Labels, units.Temperature())
 						return svg
 					},
+					unitsLoader: true,
 				}
 			}()); if __e != nil { return }
 				return })); if __e != nil { return }
-//line dashboard.gox:170
+//line dashboard.gox:180
 				__e = (new(doors.Door)).Proxy(__c, gox.Elem(func(__c gox.Cursor) (__e error) {
 					ctx := __c.Context(); _ = ctx
-//line dashboard.gox:170
+//line dashboard.gox:180
 					__e = __c.Any(func() any {
 				days, ok := d.days.Effect(ctx)
 				if !ok {
@@ -327,10 +337,10 @@ func (d dashboard) charts(city driver.City) gox.Elem {
 			__e = __c.Init("div"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:186
+//line dashboard.gox:196
 				__e = (new(doors.Door)).Proxy(__c, gox.Elem(func(__c gox.Cursor) (__e error) {
 					ctx := __c.Context(); _ = ctx
-//line dashboard.gox:186
+//line dashboard.gox:196
 					__e = __c.Any(func() any {
 				days, ok := d.days.Effect(ctx)
 				if !ok {
@@ -346,10 +356,10 @@ func (d dashboard) charts(city driver.City) gox.Elem {
 				}
 			}()); if __e != nil { return }
 				return })); if __e != nil { return }
-//line dashboard.gox:200
+//line dashboard.gox:210
 				__e = (new(doors.Door)).Proxy(__c, gox.Elem(func(__c gox.Cursor) (__e error) {
 					ctx := __c.Context(); _ = ctx
-//line dashboard.gox:200
+//line dashboard.gox:210
 					__e = __c.Any(func() any {
 				days, _ := d.days.Effect(ctx)
 				units, ok := d.units.Effect(ctx)
@@ -363,6 +373,7 @@ func (d dashboard) charts(city driver.City) gox.Elem {
 						svg, _ := driver.ChartLine(values.Values, values.Labels, units.WindSpeed())
 						return svg
 					},
+					unitsLoader: true,
 				}
 			}()); if __e != nil { return }
 				return })); if __e != nil { return }
@@ -371,42 +382,80 @@ func (d dashboard) charts(city driver.City) gox.Elem {
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:217
+//line dashboard.gox:228
 }
 
 type chart struct {
 	title string
 	svg func() []byte
+	unitsLoader bool
 }
 
-//line dashboard.gox:224
+//line dashboard.gox:236
 func (c chart) Main() gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
+//line dashboard.gox:238
+		door := new(doors.Door)
+	defer door.Static(ctx, gox.Elem(func(__c gox.Cursor) (__e error) {
+		ctx := __c.Context(); _ = ctx
+		__e = __c.InitVoid("img"); if __e != nil { return }
+		{
+//line dashboard.gox:239
+			__e = __c.Set("height", "auto"); if __e != nil { return }
+//line dashboard.gox:239
+			__e = __c.Set("width", "100%"); if __e != nil { return }
+//line dashboard.gox:239
+			__e = __c.Set("src", c.svg()); if __e != nil { return }
+//line dashboard.gox:239
+			__e = __c.Set("type", "image/svg+xml"); if __e != nil { return }
+		}
+		__e = __c.Submit(); if __e != nil { return }
+//line dashboard.gox:239
+	return }))
+
 		__e = __c.Init("article"); if __e != nil { return }
 		{
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Init("header"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:227
-				__e = __c.Any(c.title); if __e != nil { return }
+//line dashboard.gox:243
+				__e = __c.Many(c.title, " "); if __e != nil { return }
+				__e = __c.Init("span"); if __e != nil { return }
+				{
+//line dashboard.gox:245
+					__e = __c.Set("class", func() any {
+					if c.unitsLoader {
+						return "chart-loader chart-loader-units"
+					}
+					return "chart-loader"
+				}()); if __e != nil { return }
+					__e = __c.Submit(); if __e != nil { return }
+				}
+				__e = __c.Close(); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
-			__e = __c.InitVoid("img"); if __e != nil { return }
+			__e = __c.Init("div"); if __e != nil { return }
 			{
-//line dashboard.gox:229
-				__e = __c.Set("height", "auto"); if __e != nil { return }
-//line dashboard.gox:229
-				__e = __c.Set("width", "100%"); if __e != nil { return }
-//line dashboard.gox:229
-				__e = __c.Set("src", c.svg()); if __e != nil { return }
-//line dashboard.gox:229
-				__e = __c.Set("type", "image/svg+xml"); if __e != nil { return }
+//line dashboard.gox:253
+				__e = __c.Set("class", "img-wrapper"); if __e != nil { return }
+				__e = __c.Submit(); if __e != nil { return }
+//line dashboard.gox:254
+				__e = __c.Any(door); if __e != nil { return }
+				__e = __c.Init("div"); if __e != nil { return }
+				{
+//line dashboard.gox:255
+					__e = __c.Set("class", "img-loader"); if __e != nil { return }
+//line dashboard.gox:255
+					__e = __c.Set("aria-busy", "true"); if __e != nil { return }
+					__e = __c.Submit(); if __e != nil { return }
+				}
+				__e = __c.Close(); if __e != nil { return }
 			}
-			__e = __c.Submit(); if __e != nil { return }
+			__e = __c.Close(); if __e != nil { return }
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:231
+//line dashboard.gox:258
 }
