@@ -64,7 +64,7 @@ func (a App) Main() gox.Elem {
 					__e = __c.Set("class", "container"); if __e != nil { return }
 					__e = __c.Submit(); if __e != nil { return }
 //line app.gox:23
-					__e = __c.Any(CountrySelector()); if __e != nil { return }
+					__e = __c.Any(LocationSelector()); if __e != nil { return }
 				}
 				__e = __c.Close(); if __e != nil { return }
 			}

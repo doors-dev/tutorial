@@ -1,0 +1,184 @@
+package main
+
+import (
+	"context"
+	"time"
+	
+	"github.com/doors-dev/doors"
+	"github.com/doors-dev/gox"
+	"github.com/doors-dev/tutorial/driver"
+)
+
+type location struct {
+	country driver.Place
+	city driver.Place
+}
+
+func LocationSelector() gox.Comp {
+	loc := doors.NewSource(location{})
+	country := doors.DeriveSource(loc,
+		func(l location) driver.Place {
+			return l.country
+		},
+		// Propagate country changes back to location. The previous location
+		// is dropped on purpose: a new country invalidates the selected city.
+		func(_ location, c driver.Place) location {
+			return location{
+				country: c,
+			}
+		},
+	)
+	city := doors.DeriveSource(loc,
+		func(l location) driver.Place {
+			return l.city
+		},
+		func(l location, c driver.Place) location {
+			l.city = c
+			return l
+		},
+	)
+	return locationSelector{
+		city: city,
+		country: country,
+	}
+}
+
+type locationSelector struct {
+	country doors.Source[driver.Place]
+	city doors.Source[driver.Place]
+}
+
+elem (l locationSelector) Main() {
+	<article>
+		<section>
+			~placeSelector{
+				title: "Country",
+				options: new(doors.Door),
+				search: driver.Locations.CountriesSearch,
+				selected: l.country,
+			}
+		</section>
+		~(l.country.Bind(l.selectCity))
+	</article>
+}
+
+elem (l locationSelector) selectCity(country driver.Place) {
+	~(if country.IsValid() {
+		<section>
+			~placeSelector{
+				title: "City",
+				options: new(doors.Door),
+				search: func(input string) ([]driver.Place, error) {
+					return driver.Locations.CitiesSearch(country.Id, input)
+				},
+				selected: l.city,
+			}
+		</section>
+	})
+}
+
+type placeSelector struct {
+	title string
+	options *doors.Door
+	search func(input string) ([]driver.Place, error)
+	selected doors.Source[driver.Place]
+}
+
+elem (l placeSelector) Main() {
+	~(l.selected.Bind(elem(p driver.Place) {
+		~(if p.IsValid() {
+			~(l.place(p))
+		} else {
+			~(l.input())
+		})
+	}))
+}
+
+elem (l placeSelector) place(p driver.Place) {
+	<h3>~(l.title): <b>~(p.Name)</b></h3>
+	<button
+		(doors.AClick{
+			Indicator: doors.IndicateAttr("aria-busy", "true"),
+			Scope: new(doors.ScopeBlocking),
+			On: func(ctx context.Context, _ doors.RequestPointer) bool {
+				l.selected.Update(ctx, driver.Place{})
+				return true
+			},
+		})
+		class="secondary">
+		Change
+	</button>
+}
+
+elem (l placeSelector) input() {
+	~~
+	loaderID := "loader-" + doors.IDString(l.title)
+	inputID := "input-" + doors.IDString(l.title)
+	~~
+	<h3>Select ~(l.title, " ")<span id=(loaderID)></span></h3>
+	<input
+		id=(inputID)
+		(doors.AInput{
+			Scope: &doors.ScopeDebounce{
+				Duration: 300 * time.Millisecond,
+				Limit: 600 * time.Millisecond,
+			},
+			Indicator: doors.IndicateAttrQuery("#" + loaderID, "aria-busy", "true"),
+			On: func(ctx context.Context, r doors.RequestInput) bool {
+				l.options.Inner(ctx, l.results(r.Event().Value))
+				return false
+			},
+		})
+		type="search"
+		placeholder=(l.title)
+		autocomplete="off"/>
+	~(focus(inputID))
+	~~
+	l.options.Inner(ctx, nil)
+	~~
+	~(l.options)
+}
+
+func (l placeSelector) results(input string) gox.Elem {
+	if len(input) == 0 {
+		return nil
+	}
+	if len(input) < 2 {
+		return <p>
+			<mark>Type at least two letters to search</mark>
+		</p>
+	}
+	results, _ := l.search(input)
+	if len(results) == 0 {
+		return <p>
+			<i>nothing found</i>
+		</p>
+	}
+	scope := new(doors.ScopeBlocking)
+	return <ul>
+		~(for _, place := range results {
+			<li>
+				<a
+					(doors.AClick{
+						Scope: scope,
+						PreventDefault: true,
+						On: func(ctx context.Context, _ doors.RequestPointer) bool {
+							l.selected.Update(ctx, place)
+							return true
+						},
+					})
+					href="#">
+					~(place.Name)
+				</a>
+			</li>
+		})
+	</ul>
+}
+
+elem focus(id string) {
+	<script data:id=(id)>
+		const id = $data("id")
+		const el = document.getElementById(id)
+		el.focus()
+	</script>
+}

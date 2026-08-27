@@ -20,7 +20,7 @@ elem (a App) Main() {
 		</head>
 		<body>
 			<main class="container">
-				~(CountrySelector())
+				~(LocationSelector())
 			</main>
 		</body>
 	</html>
