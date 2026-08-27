@@ -1,0 +1,27 @@
+package main
+
+import (
+	"github.com/doors-dev/doors"
+	"github.com/doors-dev/gox"
+)
+
+type App struct{}
+
+elem (a App) Main() {
+	<!doctype html>
+	<html lang="en" data-theme="dark">
+		<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1">
+			<title>Hello Doors!</title>
+			<link
+				(doors.ResourceExternal("https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"))
+				rel="stylesheet">
+		</head>
+		<body>
+			<main class="container">
+				<h1>Hello Doors!</h1>
+			</main>
+		</body>
+	</html>
+}
