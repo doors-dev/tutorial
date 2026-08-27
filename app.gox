@@ -1,8 +1,22 @@
 package main
 
 import (
+	"context"
+	
 	"github.com/doors-dev/doors"
 	"github.com/doors-dev/gox"
+)
+
+type Path struct {
+	Route Route `/:" | :CityID"`
+	CityID int
+}
+
+type Route int
+
+const (
+	Selector Route = iota
+	Dashboard
 )
 
 type App struct{}
@@ -13,15 +27,38 @@ elem (a App) Main() {
 		<head>
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<title>Hello Doors!</title>
 			<link
 				(doors.ResourceExternal("https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"))
 				rel="stylesheet">
 		</head>
 		<body>
 			<main class="container">
-				~(LocationSelector())
+				~(doors.Route(
+					doors.RouteModel(a.content),
+					doors.RouteDefaultComp[doors.Location](<>
+						<title>Not Found</title>
+						~(doors.Status(404))
+						<h1>Location Not Found</h1>
+					</>),
+				))
 			</main>
 		</body>
 	</html>
+}
+
+elem (a App) content(path doors.Source[Path]) {
+	~(path.Route(
+		doors.RouteMatch(func(p Path) bool {
+			return p.Route == Selector
+		}).Comp(<>
+			<title>Select Location</title>
+			~(LocationSelector(func(ctx context.Context, city int) {
+				path.Update(ctx, Path{
+					Route: Dashboard,
+					CityID: city,
+				})
+			}))
+		</>),
+		doors.RouteDefault(WeatherDashboard),
+	))
 }

@@ -1,0 +1,44 @@
+package main
+
+import (
+	"github.com/doors-dev/doors"
+	"github.com/doors-dev/gox"
+	"github.com/doors-dev/tutorial/driver"
+)
+
+func WeatherDashboard(path doors.Source[Path]) gox.Comp {
+	city := doors.DeriveBeam(path, func(p Path) int {
+		return p.CityID
+	})
+	return city.Bind(elem(cityID int) {
+		~dashboard{
+			cityID: cityID,
+		}
+	})
+}
+
+type dashboard struct {
+	cityID int
+}
+
+elem (d dashboard) Main() {
+	~~
+	city, _ := driver.Locations.CitiesGet(d.cityID)
+	~~
+	~(if !city.IsValid() {
+		~(doors.Status(404))
+		<title>Not Found</title>
+		<h1>City Not Found</h1>
+	} else {
+		<title>~(city.Name) Weather</title>
+		<h1>Weather in ~(city.Name, ", ", city.Country.Name)</h1>
+	})
+	<a
+		class="secondary"
+		(doors.ALink{
+			Model: Path{Route: Selector},
+		})
+		role="button">
+		Change
+	</a>
+}
