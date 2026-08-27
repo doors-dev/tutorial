@@ -10,15 +10,25 @@ func WeatherDashboard(path doors.Source[Path]) gox.Comp {
 	city := doors.DeriveBeam(path, func(p Path) int {
 		return p.CityID
 	})
+	days := doors.DeriveBeam(path, func(p Path) int {
+		return p.days()
+	})
+	units := doors.DeriveBeam(path, func(p Path) driver.Units {
+		return p.units()
+	})
 	return city.Bind(elem(cityID int) {
 		~dashboard{
 			cityID: cityID,
+			days: days,
+			units: units,
 		}
 	})
 }
 
 type dashboard struct {
 	cityID int
+	days doors.Beam[int]
+	units doors.Beam[driver.Units]
 }
 
 elem (d dashboard) Main() {
@@ -33,12 +43,86 @@ elem (d dashboard) Main() {
 		<title>~(city.Name) Weather</title>
 		<h1>Weather in ~(city.Name, ", ", city.Country.Name)</h1>
 	})
-	<a
-		class="secondary"
-		(doors.ALink{
-			Model: Path{Route: Selector},
+	~(d.change())
+	~(d.menu())
+}
+
+elem (d dashboard) change() {
+	~>(new(doors.Door)) <>
+		~~
+		days, _ := d.days.Effect(ctx)
+		units, ok := d.units.Effect(ctx)
+		~~
+		~(if ok {
+			<a
+				class="secondary"
+				(doors.ALink{
+					Model: Path{
+						Route: Selector,
+						Days: daysQuery(days),
+						Units: unitsQuery(units),
+					},
+				})
+				role="button">
+				Change
+			</a>
 		})
-		role="button">
-		Change
-	</a>
+	</>
+}
+
+elem (d dashboard) menu() {
+	<nav>
+		~(d.units.Bind(d.daysNav))
+		~(d.days.Bind(d.unitNav))
+	</nav>
+}
+
+elem (d dashboard) daysNav(units driver.Units) {
+	<ul>
+		~(for i := range 7 {
+			~~
+			days := i + 1
+			~~
+			<li>
+				<a
+					class="secondary"
+					(doors.ALink{
+						Model: Path{
+							Route: Dashboard,
+							CityID: d.cityID,
+							Days: daysQuery(days),
+							Units: unitsQuery(units),
+						},
+					})>
+					~(days)
+					~(if days == 1 {
+						 day
+					} else {
+						 days
+					})
+				</a>
+			</li>
+		})
+	</ul>
+}
+
+elem (d dashboard) unitNav(days int) {
+	<ul>
+		~(for _, units := range []driver.Units{driver.Metric, driver.Imperial} {
+			<li>
+				<a
+					class="secondary"
+					(doors.ALink{
+						Model: Path{
+							Route: Dashboard,
+							CityID: d.cityID,
+							Days: daysQuery(days),
+							Units: unitsQuery(units),
+						},
+					})>
+					~(units.String())
+				</a>
+			</li>
+		})
+	</ul>
 }

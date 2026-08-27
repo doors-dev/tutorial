@@ -5,11 +5,42 @@ import (
 	
 	"github.com/doors-dev/doors"
 	"github.com/doors-dev/gox"
+	"github.com/doors-dev/tutorial/driver"
 )
 
 type Path struct {
 	Route Route `/:" | :CityID"`
 	CityID int
+	Units *driver.Units `query:"units"`
+	Days *int `query:"days"`
+}
+
+func (p Path) days() int {
+	if p.Days == nil {
+		return 7
+	}
+	return min(max(*p.Days, 1), 7)
+}
+
+func daysQuery(days int) *int {
+	if days == 7 {
+		return nil
+	}
+	return &days
+}
+
+func (p Path) units() driver.Units {
+	if p.Units == nil || *p.Units != driver.Imperial {
+		return driver.Metric
+	}
+	return driver.Imperial
+}
+
+func unitsQuery(units driver.Units) *driver.Units {
+	if units == driver.Metric {
+		return nil
+	}
+	return &units
 }
 
 type Route int
@@ -53,9 +84,10 @@ elem (a App) content(path doors.Source[Path]) {
 		}).Comp(<>
 			<title>Select Location</title>
 			~(LocationSelector(func(ctx context.Context, city int) {
-				path.Update(ctx, Path{
-					Route: Dashboard,
-					CityID: city,
+				path.Mutate(ctx, func(p Path) Path {
+					p.Route = Dashboard
+					p.CityID = city
+					return p
 				})
 			}))
 		</>),
