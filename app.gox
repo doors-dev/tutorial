@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	
 	"github.com/doors-dev/doors"
 	"github.com/doors-dev/gox"
 	"github.com/doors-dev/tutorial/driver"
 )
+
+//go:embed style.css
+var styles []byte
 
 type Path struct {
 	Route Route `/:" | :CityID"`
@@ -61,6 +65,7 @@ elem (a App) Main() {
 			<link
 				(doors.ResourceExternal("https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"))
 				rel="stylesheet">
+			<link href=(styles) rel="stylesheet">
 		</head>
 		<body>
 			<main class="container">

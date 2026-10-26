@@ -1,0 +1,19 @@
+.img-wrapper {
+	position: relative;
+	aspect-ratio: 3 / 2;
+	width: 100%;
+}
+
+.img-loader {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 0;
+}
+
+.img-wrapper img {
+	position: relative;
+	z-index: 1;
+}
+
