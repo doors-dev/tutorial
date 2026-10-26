@@ -20,7 +20,7 @@ elem (a App) Main() {
 		</head>
 		<body>
 			<main class="container">
-				<h1>Hello Doors!</h1>
+				~(CountrySelector())
 			</main>
 		</body>
 	</html>
