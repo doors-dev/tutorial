@@ -44,6 +44,7 @@ func LocationSelector(apply func(ctx context.Context, city int)) gox.Comp {
 		city: city,
 		country: country,
 		apply: apply,
+		scope: new(doors.ScopeConcurrent),
 	}
 }
 
@@ -51,9 +52,10 @@ type locationSelector struct {
 	country doors.Source[driver.Place]
 	city doors.Source[driver.Place]
 	apply func(ctx context.Context, city int)
+	scope *doors.ScopeConcurrent
 }
 
-//line location_selector.gox:53
+//line location_selector.gox:55
 func (l locationSelector) Main() gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
@@ -63,30 +65,31 @@ func (l locationSelector) Main() gox.Elem {
 			__e = __c.Init("section"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:56
+//line location_selector.gox:58
 				__e = __c.Any(placeSelector{
 				title: "Country",
 				options: new(doors.Door),
 				search: driver.Locations.CountriesSearch,
 				selected: l.country,
+				scope: l.scope.Scope(1),
 			}); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
-//line location_selector.gox:63
+//line location_selector.gox:66
 			__e = __c.Any(l.country.Bind(l.selectCity)); if __e != nil { return }
-//line location_selector.gox:64
+//line location_selector.gox:67
 			__e = __c.Any(l.city.Bind(l.submit)); if __e != nil { return }
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line location_selector.gox:66
+//line location_selector.gox:69
 }
 
-//line location_selector.gox:68
+//line location_selector.gox:71
 func (l locationSelector) submit(city driver.Place) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
-//line location_selector.gox:69
+//line location_selector.gox:72
 		if city.IsValid() {
 			__e = __c.InitVoid("hr"); if __e != nil { return }
 			{
@@ -94,50 +97,52 @@ func (l locationSelector) submit(city driver.Place) gox.Elem {
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Init("button"); if __e != nil { return }
 			{
-//line location_selector.gox:72
+//line location_selector.gox:75
 				__e = __c.Modify(doors.AClick{
 				Indicator: doors.IndicateAttr("aria-busy", "true"),
+				Scope: l.scope.Scope(0),
 				On: func(ctx context.Context, _ doors.RequestPointer) bool {
 					l.apply(ctx, city.Id)
 					return true
 				},
 			}); if __e != nil { return }
-//line location_selector.gox:79
+//line location_selector.gox:83
 				__e = __c.Set("id", "confirm"); if __e != nil { return }
 				__e = __c.Submit(); if __e != nil { return }
 				__e = __c.Text("Confirm"); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
-//line location_selector.gox:82
+//line location_selector.gox:86
 			__e = __c.Any(focus("confirm")); if __e != nil { return }
 		}
 	return })
-//line location_selector.gox:84
+//line location_selector.gox:88
 }
 
-//line location_selector.gox:86
+//line location_selector.gox:90
 func (l locationSelector) selectCity(country driver.Place) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
-//line location_selector.gox:87
+//line location_selector.gox:91
 		if country.IsValid() {
 			__e = __c.Init("section"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:89
+//line location_selector.gox:93
 				__e = __c.Any(placeSelector{
 				title: "City",
 				options: new(doors.Door),
 				search: func(input string) ([]driver.Place, error) {
 					return driver.Locations.CitiesSearch(country.Id, input)
 				},
+				scope: l.scope.Scope(1),
 				selected: l.city,
 			}); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
 		}
 	return })
-//line location_selector.gox:99
+//line location_selector.gox:104
 }
 
 type placeSelector struct {
@@ -145,45 +150,46 @@ type placeSelector struct {
 	options *doors.Door
 	search func(input string) ([]driver.Place, error)
 	selected doors.Source[driver.Place]
+	scope doors.Scopes
 }
 
-//line location_selector.gox:108
+//line location_selector.gox:114
 func (l placeSelector) Main() gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
-//line location_selector.gox:109
+//line location_selector.gox:115
 		__e = __c.Any(l.selected.Bind(func(p driver.Place) gox.Elem {
 		return gox.Elem(func(__c gox.Cursor) (__e error) {
 			ctx := __c.Context(); _ = ctx
-//line location_selector.gox:110
+//line location_selector.gox:116
 			if p.IsValid() {
-//line location_selector.gox:111
+//line location_selector.gox:117
 				__e = __c.Any(l.place(p)); if __e != nil { return }
 			} else  {
-//line location_selector.gox:113
+//line location_selector.gox:119
 				__e = __c.Any(l.input()); if __e != nil { return }
 			}
 		return })
-//line location_selector.gox:115
+//line location_selector.gox:121
 	})); if __e != nil { return }
 	return })
-//line location_selector.gox:116
+//line location_selector.gox:122
 }
 
-//line location_selector.gox:118
+//line location_selector.gox:124
 func (l placeSelector) place(p driver.Place) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
 		__e = __c.Init("h3"); if __e != nil { return }
 		{
 			__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:119
+//line location_selector.gox:125
 			__e = __c.Any(l.title); if __e != nil { return }
 			__e = __c.Text(": "); if __e != nil { return }
 			__e = __c.Init("b"); if __e != nil { return }
 			{
 				__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:119
+//line location_selector.gox:125
 				__e = __c.Any(p.Name); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
@@ -191,30 +197,30 @@ func (l placeSelector) place(p driver.Place) gox.Elem {
 		__e = __c.Close(); if __e != nil { return }
 		__e = __c.Init("button"); if __e != nil { return }
 		{
-//line location_selector.gox:121
+//line location_selector.gox:127
 			__e = __c.Modify(doors.AClick{
 			Indicator: doors.IndicateAttr("aria-busy", "true"),
-			Scope: new(doors.ScopeBlocking),
+			Scope: new(doors.ScopeBlocking).And(l.scope),
 			On: func(ctx context.Context, _ doors.RequestPointer) bool {
 				l.selected.Update(ctx, driver.Place{})
 				return true
 			},
 		}); if __e != nil { return }
-//line location_selector.gox:129
+//line location_selector.gox:135
 			__e = __c.Set("class", "secondary"); if __e != nil { return }
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Text("Change"); if __e != nil { return }
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line location_selector.gox:132
+//line location_selector.gox:138
 }
 
-//line location_selector.gox:134
+//line location_selector.gox:140
 func (l placeSelector) input() gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
-//line location_selector.gox:136
+//line location_selector.gox:142
 		loaderID := "loader-" + doors.IDString(l.title)
 	inputID := "input-" + doors.IDString(l.title)
 
@@ -222,11 +228,11 @@ func (l placeSelector) input() gox.Elem {
 		{
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Text("Select "); if __e != nil { return }
-//line location_selector.gox:139
+//line location_selector.gox:145
 			__e = __c.Many(l.title, " "); if __e != nil { return }
 			__e = __c.Init("span"); if __e != nil { return }
 			{
-//line location_selector.gox:139
+//line location_selector.gox:145
 				__e = __c.Set("id", loaderID); if __e != nil { return }
 				__e = __c.Submit(); if __e != nil { return }
 			}
@@ -235,9 +241,9 @@ func (l placeSelector) input() gox.Elem {
 		__e = __c.Close(); if __e != nil { return }
 		__e = __c.InitVoid("input"); if __e != nil { return }
 		{
-//line location_selector.gox:141
+//line location_selector.gox:147
 			__e = __c.Set("id", inputID); if __e != nil { return }
-//line location_selector.gox:142
+//line location_selector.gox:148
 			__e = __c.Modify(doors.AInput{
 			Scope: &doors.ScopeDebounce{
 				Duration: 300 * time.Millisecond,
@@ -249,23 +255,23 @@ func (l placeSelector) input() gox.Elem {
 				return false
 			},
 		}); if __e != nil { return }
-//line location_selector.gox:153
+//line location_selector.gox:159
 			__e = __c.Set("type", "search"); if __e != nil { return }
-//line location_selector.gox:154
+//line location_selector.gox:160
 			__e = __c.Set("placeholder", l.title); if __e != nil { return }
-//line location_selector.gox:155
+//line location_selector.gox:161
 			__e = __c.Set("autocomplete", "off"); if __e != nil { return }
 		}
 		__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:156
+//line location_selector.gox:162
 		__e = __c.Any(focus(inputID)); if __e != nil { return }
-//line location_selector.gox:158
+//line location_selector.gox:164
 		l.options.Inner(ctx, nil)
 
-//line location_selector.gox:160
+//line location_selector.gox:166
 		__e = __c.Any(l.options); if __e != nil { return }
 	return })
-//line location_selector.gox:161
+//line location_selector.gox:167
 }
 
 func (l placeSelector) results(input string) gox.Elem {
@@ -286,7 +292,7 @@ func (l placeSelector) results(input string) gox.Elem {
 				__e = __c.Close(); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
-//line location_selector.gox:170
+//line location_selector.gox:176
 		return })
 	}
 	results, _ := l.search(input)
@@ -304,7 +310,7 @@ func (l placeSelector) results(input string) gox.Elem {
 				__e = __c.Close(); if __e != nil { return }
 			}
 			__e = __c.Close(); if __e != nil { return }
-//line location_selector.gox:176
+//line location_selector.gox:182
 		return })
 	}
 	scope := new(doors.ScopeBlocking)
@@ -313,14 +319,14 @@ func (l placeSelector) results(input string) gox.Elem {
 		__e = __c.Init("ul"); if __e != nil { return }
 		{
 			__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:180
+//line location_selector.gox:186
 			for _, place := range results {
 				__e = __c.Init("li"); if __e != nil { return }
 				{
 					__e = __c.Submit(); if __e != nil { return }
 					__e = __c.Init("a"); if __e != nil { return }
 					{
-//line location_selector.gox:183
+//line location_selector.gox:189
 						__e = __c.Modify(doors.AClick{
 						Scope: scope,
 						PreventDefault: true,
@@ -329,10 +335,10 @@ func (l placeSelector) results(input string) gox.Elem {
 							return true
 						},
 					}); if __e != nil { return }
-//line location_selector.gox:191
+//line location_selector.gox:197
 						__e = __c.Set("href", "#"); if __e != nil { return }
 						__e = __c.Submit(); if __e != nil { return }
-//line location_selector.gox:192
+//line location_selector.gox:198
 						__e = __c.Any(place.Name); if __e != nil { return }
 					}
 					__e = __c.Close(); if __e != nil { return }
@@ -341,22 +347,22 @@ func (l placeSelector) results(input string) gox.Elem {
 			}
 		}
 		__e = __c.Close(); if __e != nil { return }
-//line location_selector.gox:196
+//line location_selector.gox:202
 	return })
 }
 
-//line location_selector.gox:199
+//line location_selector.gox:205
 func focus(id string) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
 		__e = __c.Init("script"); if __e != nil { return }
 		{
-//line location_selector.gox:200
+//line location_selector.gox:206
 			__e = __c.Set("data:id", id); if __e != nil { return }
 			__e = __c.Submit(); if __e != nil { return }
 			__e = __c.Raw("const id = $data(\"id\")\n\t\tconst el = document.getElementById(id)\n\t\tel.focus()"); if __e != nil { return }
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line location_selector.gox:205
+//line location_selector.gox:211
 }

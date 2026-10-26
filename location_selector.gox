@@ -41,6 +41,7 @@ func LocationSelector(apply func(ctx context.Context, city int)) gox.Comp {
 		city: city,
 		country: country,
 		apply: apply,
+		scope: new(doors.ScopeConcurrent),
 	}
 }
 
@@ -48,6 +49,7 @@ type locationSelector struct {
 	country doors.Source[driver.Place]
 	city doors.Source[driver.Place]
 	apply func(ctx context.Context, city int)
+	scope *doors.ScopeConcurrent
 }
 
 elem (l locationSelector) Main() {
@@ -58,6 +60,7 @@ elem (l locationSelector) Main() {
 				options: new(doors.Door),
 				search: driver.Locations.CountriesSearch,
 				selected: l.country,
+				scope: l.scope.Scope(1),
 			}
 		</section>
 		~(l.country.Bind(l.selectCity))
@@ -71,6 +74,7 @@ elem (l locationSelector) submit(city driver.Place) {
 		<button
 			(doors.AClick{
 				Indicator: doors.IndicateAttr("aria-busy", "true"),
+				Scope: l.scope.Scope(0),
 				On: func(ctx context.Context, _ doors.RequestPointer) bool {
 					l.apply(ctx, city.Id)
 					return true
@@ -92,6 +96,7 @@ elem (l locationSelector) selectCity(country driver.Place) {
 				search: func(input string) ([]driver.Place, error) {
 					return driver.Locations.CitiesSearch(country.Id, input)
 				},
+				scope: l.scope.Scope(1),
 				selected: l.city,
 			}
 		</section>
@@ -103,6 +108,7 @@ type placeSelector struct {
 	options *doors.Door
 	search func(input string) ([]driver.Place, error)
 	selected doors.Source[driver.Place]
+	scope doors.Scopes
 }
 
 elem (l placeSelector) Main() {
@@ -120,7 +126,7 @@ elem (l placeSelector) place(p driver.Place) {
 	<button
 		(doors.AClick{
 			Indicator: doors.IndicateAttr("aria-busy", "true"),
-			Scope: new(doors.ScopeBlocking),
+			Scope: new(doors.ScopeBlocking).And(l.scope),
 			On: func(ctx context.Context, _ doors.RequestPointer) bool {
 				l.selected.Update(ctx, driver.Place{})
 				return true
