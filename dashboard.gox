@@ -84,23 +84,19 @@ elem (d dashboard) daysNav(units driver.Units) {
 			days := i + 1
 			~~
 			<li>
-				<a
-					class="secondary"
-					(doors.ALink{
-						Model: Path{
-							Route: Dashboard,
-							CityID: d.cityID,
-							Days: daysQuery(days),
-							Units: unitsQuery(units),
-						},
-					})>
-					~(days)
-					~(if days == 1 {
-						 day
-					} else {
-						 days
-					})
-				</a>
+				~navLink{
+					city: d.cityID,
+					days: days,
+					units: units,
+					text: <>
+						~(days)
+						~(if days == 1 {
+							 day
+						} else {
+							 days
+						})
+					</>,
+				}
 			</li>
 		})
 	</ul>
@@ -110,19 +106,38 @@ elem (d dashboard) unitNav(days int) {
 	<ul>
 		~(for _, units := range []driver.Units{driver.Metric, driver.Imperial} {
 			<li>
-				<a
-					class="secondary"
-					(doors.ALink{
-						Model: Path{
-							Route: Dashboard,
-							CityID: d.cityID,
-							Days: daysQuery(days),
-							Units: unitsQuery(units),
-						},
-					})>
-					~(units.String())
-				</a>
+				~navLink{
+					city: d.cityID,
+					days: days,
+					units: units,
+					text: units,
+				}
 			</li>
 		})
 	</ul>
+}
+
+type navLink struct {
+	city int
+	days int
+	units driver.Units
+	text any
+}
+
+elem (l navLink) Main() {
+	<a
+		class="secondary"
+		(doors.ALink{
+			Active: doors.Active{
+				Indicator: doors.IndicateAttr("aria-current", "true"),
+			},
+			Model: Path{
+				Route: Dashboard,
+				CityID: l.city,
+				Days: daysQuery(l.days),
+				Units: unitsQuery(l.units),
+			},
+		})>
+		~(l.text)
+	</a>
 }

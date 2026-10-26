@@ -161,74 +161,97 @@ func (d dashboard) daysNav(units driver.Units) gox.Elem {
 				__e = __c.Init("li"); if __e != nil { return }
 				{
 					__e = __c.Submit(); if __e != nil { return }
-					__e = __c.Init("a"); if __e != nil { return }
-					{
-//line dashboard.gox:88
-						__e = __c.Set("class", "secondary"); if __e != nil { return }
-//line dashboard.gox:89
-						__e = __c.Modify(doors.ALink{
-						Model: Path{
-							Route: Dashboard,
-							CityID: d.cityID,
-							Days: daysQuery(days),
-							Units: unitsQuery(units),
-						},
-					}); if __e != nil { return }
-						__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:97
-						__e = __c.Any(days); if __e != nil { return }
-//line dashboard.gox:98
-						if days == 1 {
-							__e = __c.Text(" day"); if __e != nil { return }
-						} else  {
-							__e = __c.Text(" days"); if __e != nil { return }
+//line dashboard.gox:87
+					__e = __c.Any(navLink{
+					city: d.cityID,
+					days: days,
+					units: units,
+					text: gox.Elem(func(__c gox.Cursor) (__e error) {
+						ctx := __c.Context(); _ = ctx
+						__e = __c.InitContainer(); if __e != nil { return }
+						{
+//line dashboard.gox:92
+							__e = __c.Any(days); if __e != nil { return }
+//line dashboard.gox:93
+							if days == 1 {
+								__e = __c.Text(" day"); if __e != nil { return }
+							} else  {
+								__e = __c.Text(" days"); if __e != nil { return }
+							}
 						}
-					}
-					__e = __c.Close(); if __e != nil { return }
+						__e = __c.Close(); if __e != nil { return }
+//line dashboard.gox:98
+					return }),
+				}); if __e != nil { return }
 				}
 				__e = __c.Close(); if __e != nil { return }
 			}
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:107
+//line dashboard.gox:103
 }
 
-//line dashboard.gox:109
+//line dashboard.gox:105
 func (d dashboard) unitNav(days int) gox.Elem {
 	return gox.Elem(func(__c gox.Cursor) (__e error) {
 		ctx := __c.Context(); _ = ctx
 		__e = __c.Init("ul"); if __e != nil { return }
 		{
 			__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:111
+//line dashboard.gox:107
 			for _, units := range []driver.Units{driver.Metric, driver.Imperial} {
 				__e = __c.Init("li"); if __e != nil { return }
 				{
 					__e = __c.Submit(); if __e != nil { return }
-					__e = __c.Init("a"); if __e != nil { return }
-					{
-//line dashboard.gox:114
-						__e = __c.Set("class", "secondary"); if __e != nil { return }
-//line dashboard.gox:115
-						__e = __c.Modify(doors.ALink{
-						Model: Path{
-							Route: Dashboard,
-							CityID: d.cityID,
-							Days: daysQuery(days),
-							Units: unitsQuery(units),
-						},
-					}); if __e != nil { return }
-						__e = __c.Submit(); if __e != nil { return }
-//line dashboard.gox:123
-						__e = __c.Any(units.String()); if __e != nil { return }
-					}
-					__e = __c.Close(); if __e != nil { return }
+//line dashboard.gox:109
+					__e = __c.Any(navLink{
+					city: d.cityID,
+					days: days,
+					units: units,
+					text: units,
+				}); if __e != nil { return }
 				}
 				__e = __c.Close(); if __e != nil { return }
 			}
 		}
 		__e = __c.Close(); if __e != nil { return }
 	return })
-//line dashboard.gox:128
+//line dashboard.gox:118
+}
+
+type navLink struct {
+	city int
+	days int
+	units driver.Units
+	text any
+}
+
+//line dashboard.gox:127
+func (l navLink) Main() gox.Elem {
+	return gox.Elem(func(__c gox.Cursor) (__e error) {
+		ctx := __c.Context(); _ = ctx
+		__e = __c.Init("a"); if __e != nil { return }
+		{
+//line dashboard.gox:129
+			__e = __c.Set("class", "secondary"); if __e != nil { return }
+//line dashboard.gox:130
+			__e = __c.Modify(doors.ALink{
+			Active: doors.Active{
+				Indicator: doors.IndicateAttr("aria-current", "true"),
+			},
+			Model: Path{
+				Route: Dashboard,
+				CityID: l.city,
+				Days: daysQuery(l.days),
+				Units: unitsQuery(l.units),
+			},
+		}); if __e != nil { return }
+			__e = __c.Submit(); if __e != nil { return }
+//line dashboard.gox:141
+			__e = __c.Any(l.text); if __e != nil { return }
+		}
+		__e = __c.Close(); if __e != nil { return }
+	return })
+//line dashboard.gox:143
 }
