@@ -43,8 +43,15 @@ elem (d dashboard) Main() {
 		<title>~(city.Name) Weather</title>
 		<h1>Weather in ~(city.Name, ", ", city.Country.Name)</h1>
 	})
-	~(d.change())
-	~(d.menu())
+	<section>
+		~(d.change())
+		~(d.menu())
+	</section>
+	~(if city.IsValid() {
+		<section>
+			~(d.charts(city))
+		</section>
+	})
 }
 
 elem (d dashboard) change() {
@@ -140,4 +147,85 @@ elem (l navLink) Main() {
 		})>
 		~(l.text)
 	</a>
+}
+
+elem (d dashboard) charts(city driver.City) {
+	<div class="grid">
+		<div>
+			~>(new(doors.Door)) ~({
+				days, _ := d.days.Effect(ctx)
+				units, ok := d.units.Effect(ctx)
+				if !ok {
+					return nil
+				}
+				return chart{
+					title: "Temperature",
+					svg: func() []byte {
+						values, _ := driver.Weather.Temperature(ctx, city, units, days)
+						svg, _ := driver.ChartLine(values.Values, values.Labels, units.Temperature())
+						return svg
+					},
+				}
+			})
+			~>(new(doors.Door)) ~({
+				days, ok := d.days.Effect(ctx)
+				if !ok {
+					return nil
+				}
+				return chart{
+					title: "Humidity",
+					svg: func() []byte {
+						values, _ := driver.Weather.Humidity(ctx, city, days)
+						svg, _ := driver.ChartLine(values.Values, values.Labels, "%")
+						return svg
+					},
+				}
+			})
+		</div>
+		<div>
+			~>(new(doors.Door)) ~({
+				days, ok := d.days.Effect(ctx)
+				if !ok {
+					return nil
+				}
+				return chart{
+					title: "Weather",
+					svg: func() []byte {
+						values, _ := driver.Weather.Code(ctx, city, days)
+						svg, _ := driver.ChartPie(values.Values)
+						return svg
+					},
+				}
+			})
+			~>(new(doors.Door)) ~({
+				days, _ := d.days.Effect(ctx)
+				units, ok := d.units.Effect(ctx)
+				if !ok {
+					return nil
+				}
+				return chart{
+					title: "Wind Speed",
+					svg: func() []byte {
+						values, _ := driver.Weather.WindSpeed(ctx, city, units, days)
+						svg, _ := driver.ChartLine(values.Values, values.Labels, units.WindSpeed())
+						return svg
+					},
+				}
+			})
+		</div>
+	</div>
+}
+
+type chart struct {
+	title string
+	svg func() []byte
+}
+
+elem (c chart) Main() {
+	<article>
+		<header>
+			~(c.title)
+		</header>
+		<img height="auto" width="100%" src=(c.svg()) type="image/svg+xml"/>
+	</article>
 }
