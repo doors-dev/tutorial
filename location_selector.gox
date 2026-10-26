@@ -14,7 +14,7 @@ type location struct {
 	city driver.Place
 }
 
-func LocationSelector() gox.Comp {
+func LocationSelector(apply func(ctx context.Context, city int)) gox.Comp {
 	loc := doors.NewSource(location{})
 	country := doors.DeriveSource(loc,
 		func(l location) driver.Place {
@@ -40,12 +40,14 @@ func LocationSelector() gox.Comp {
 	return locationSelector{
 		city: city,
 		country: country,
+		apply: apply,
 	}
 }
 
 type locationSelector struct {
 	country doors.Source[driver.Place]
 	city doors.Source[driver.Place]
+	apply func(ctx context.Context, city int)
 }
 
 elem (l locationSelector) Main() {
@@ -59,7 +61,26 @@ elem (l locationSelector) Main() {
 			}
 		</section>
 		~(l.country.Bind(l.selectCity))
+		~(l.city.Bind(l.submit))
 	</article>
+}
+
+elem (l locationSelector) submit(city driver.Place) {
+	~(if city.IsValid() {
+		<hr/>
+		<button
+			(doors.AClick{
+				Indicator: doors.IndicateAttr("aria-busy", "true"),
+				On: func(ctx context.Context, _ doors.RequestPointer) bool {
+					l.apply(ctx, city.Id)
+					return true
+				},
+			})
+			id="confirm">
+			Confirm
+		</button>
+		~(focus("confirm"))
+	})
 }
 
 elem (l locationSelector) selectCity(country driver.Place) {
